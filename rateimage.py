@@ -57,19 +57,7 @@ ALREADY_NAMED = re.compile(r"^[0-3]-[a-z]-[+~#^@!=]_\d+$")
 def build_prompt() -> str:
     themes = "\n".join(f'  "{k}" = {v}' for k, v in THEMES.items())
     edits = "\n".join(f'  "{k}" = {v}' for k, v in EDITS.items())
-    return f"""You are a professional photo editor and curator. Evaluate the attached image three ways. Score each from 1 to 10 (be honest, 5 is average, 9-10 is rare):post: how well it would do on social media (instant impact, eye-catching, shareable) sell: commercial value for stock / prints / clients (technical quality, clean, marketable subject, no distracting logos or people who'd need a release)
-- compete: how it would do in a photo contest (originality, technical excellence,
-        storytelling, strong composition)
-
-Then choose ONE theme letter:
-{themes}
-
-And ONE edit symbol, the single most valuable improvement to make next:
-{edits}
-
-Reply with ONLY a JSON object, no markdown, in exactly this shape:
-{{"post": <1-10>, "sell": <1-10>, "compete": <1-10>, "theme": "<letter>", "edit": "<symbol>",
-  "edit_note": "<short, specific edit advice>", "reason": "<one short sentence>"}}"""
+    return f"""You are a professional photo editor and curator. Evaluate the attached image three ways. Score each from 1 to 10 (be honest, 5 is average, 9-10 is rare): post: how well it would do on social media (instant impact, eye-catching, shareable) sell: commercial value for stock / prints / clients (technical quality, clean, marketable subject, no distracting logos or people who'd need a release) compete: how it would do in a photo contest (originality, technical excellence, storytelling, strong composition) then choose ONE theme letter: {themes} And ONE edit symbol, the single most valuable improvement to make next: {edits} Reply with ONLY a JSON object, no markdown, in exactly this shape: {{"post": <1-10>, "sell": <1-10>, "compete": <1-10>, "theme": "<letter>", "edit": "<symbol>", "edit_note": "<short, specific edit advice>", "reason": "<one short sentence>"}}"""
 
 def encode_image(path: Path, max_side: int) -> str:
     if Image is not None:
@@ -185,26 +173,25 @@ def main():
 
     api_key = os.environ.get("HACKCLUB_API_KEY")
     if not api_key:
-        sys.exit("Set your key first mate")
+        sys.exit("Set HACKCLUB_API_KEY first (get a key at https://ai.hackclub.com).")
 
     folder = Path(args.folder)
     if not folder.is_dir():
-        sys.exit(f"'{folder}' is not folder")
+        sys.exit(f"'{folder}' is not a folder.")
 
     images = find_images(folder, args.recursive)
     if not images:
-        sys.exit(f"no new images found in '{folder}' (renames/rated images are skipped)")
+        sys.exit(f"No new images found in '{folder}' (already-renamed files are skipped).")
 
     mode = "RENAMING" if args.apply else "PREVIEW (add --apply to rename)"
-    print(f"{len(images)} image(s) . model {args.model} . {mode}\n")
+    print(f"{len(images)} image(s) | model {args.model} | {mode}\n")
 
-    rows, taken = [], set ()
+    rows, taken = [], set()
     for i, path in enumerate(images, 1):
         print(f"[{i}/{len(images)}] {path.name}")
         try:
             r = rate_image(path, api_key, args.model, args.max_side)
-
-        except Exception as e:
+        except Exception as e: 
             print(f"    !! failed: {e}")
             continue
 
@@ -219,3 +206,34 @@ def main():
               + (f" ({r['edit_note']})" if r["edit_note"] else ""))
         rows.append(r)
         time.sleep(args.delay)
+
+    if not rows:
+        sys.exit("\nNothing was rated successfully.")
+
+    if args.apply:
+        for r in rows:
+            try:
+                r["original"].rename(r["new"])
+                r["applied"] = "yes"
+            except OSError as e:
+                print(f"could not rename {r['original'].name}: {e}")
+
+    log = args.log or f"ratings_{datetime.now():%Y%m%d_%H%M%S}.csv"
+    with open(log, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["original_path", "new_path", "applied", "use", "post", "sell", "compete",
+                    "theme", "edit", "edit_note", "reason"])
+        for r in rows:
+            w.writerow([r["original"], r["new"], r["applied"], r["use"], r["post"], r["sell"],
+                        r["compete"], THEMES[r["theme"]], EDITS[r["edit"]], r["edit_note"], r["reason"]])
+
+    print("\n=== Summary ===")
+    for code, label in USES.items():
+        count = sum(1 for r in rows if r["use"] == code)
+        if count:
+            print(f"  {code} {label}: {count}")
+    done = sum(1 for r in rows if r["applied"] == "yes")
+    print(f"\nLog saved to {log}" + (f" ({done} renamed; undo with --undo {log})" if args.apply else ""))
+
+if __name__ == "__main__":
+    main()
