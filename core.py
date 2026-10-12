@@ -62,13 +62,12 @@ EDIT_HINTS = [
 ]
 
 THEME_HINTS = (("car", "m"), ("motor", "m"), ("racing", "m"), ("architect", "c"), ("building", "c"), ("portrait", "p"), ("person", "p"), ("scenery", "l"))
-
 LOG_COLUMNS = ["original_path", "new_path", "applied", "use", "post", "sell", "compete", "theme", "edit", "edit_note", "strength", "reason", "agreement", "correction", "first_post", "first_sell", "first_compete", "first_theme", "judge_error"]
 
-JSON_SHAPE = """Reply with ONLY a JSON object, no markdown, in exactly this shape: {"post": <1-10>, "sell": <1-10>, "compete": <1-10>, "theme": "<theme key>", "edit": "<edit key>", "edit_note": "<specific advice for that edit; empty if edit is none>", "strength": "<the best thing about this image>", "reason": "<one short sentence>"%s}"""
+JSON_SHAPE = """reply only in a json objects, no markdown, in exactly this shape: {"post": <1-10>, "sell": <1-10>, "compete": <1-10>, "theme": "<theme key>", "edit": "<edit key>", "edit_note": "<specific advice for that edit; empty if edit is none>", "strength": "<the best thing about this image>", "reason": "<one short sentence>"%s}"""
 
 
-def legend_text() -> str:
+def lgntext() -> str:
     lines = ["Filename = number-letter-symbol_counter, e.g. 1-m-+_001.jpg", "", "NUMBER (best use)"]
     lines += [f"  {k}  {v}" + (f"   (bar: score >= {WORTH_BARS[k]})" if k in WORTH_BARS else "") for k, v in USES.items()]
     lines += ["", "LETTER (theme)"] + [f"  {k}  {key}: {d}" for k, (key, d) in THEMES.items()]
@@ -79,33 +78,25 @@ def legend_text() -> str:
 def rubric() -> str:
     themes = "\n".join(f'  "{key}" - {desc}' for key, desc in THEMES.values())
     edits = "\n".join(f'  "{key}" - {desc}' for key, desc in EDITS.values() if key != "unclear")
-    return f"""Score each from 1–10. Calibration: 5 = average, 6–7 = good, 8 = strong, 9–10 = rare. Be fair, noting strengths and only visible flaws.
-- post: Social media impact, eye-catching appeal, shareability.
-- sell: Commercial value for stock, prints, or clients. Private screenshots/documents score 1.
-- compete: Photo contest potential, considering originality, technical quality, composition, and storytelling.
-Theme: Return ONE key from:
-{themes}
-Edit: Return ONE key for the most valuable fix, or "none" if no fix is needed:
-{edits}
-The image is already upright. Suggest rotation only if the horizon or verticals are visibly tilted."""
+    return f"""score each image in its own number which 1-10 10 is good 5 is average and 1 is bad, 9 until 10 is rare number except its really worth it by perspective colour grading and shadow, be objective its image no bias for each theme, count perspective colour grading and used basic photography law for grading, noise, crop etc etc count, evaluate its image that matches its quality, bad or average go to social media, average but kind of good with some edit go to sellable and flagship, 100/100 perfect by perspective, noise, edit, colour grading, photo method, go to competition draft, which also considered by originality and technical also storytelling. theme: return multiple keys that similar, edit: add a reccomendation for colour grading, a focus so is it in frame/grid or not, colour grading noise and everything in the photography edit list"""
 
 
-def build_prompt() -> str:
-    return "You are a professional photo editor and curator. Evaluate the attached image.\n\n" + rubric() + "\n\n" + JSON_SHAPE % ""
+def bldprompt() -> str:
+    return "You are a professional photo editor and curator. attached image.\n\n" + rubric() + "\n\n" + JSON_SHAPE % ""
 
 
-def build_judge_prompt(first: dict) -> str:
+def jdgprompt(first: dict) -> str:
     review = json.dumps({k: first[k] for k in ("post", "sell", "compete", "theme", "edit", "edit_note", "strength", "reason")}, ensure_ascii=False)
-    return ("You are the senior judge of a photo contest. A first reviewer evaluated the attached image and produced the review below. First reviewers often make mistakes: they invent flaws that are not there (for example calling an upright image sideways), choose the wrong theme, and are too harsh or too generous. Do NOT anchor on their numbers. Look at the image yourself, check every claim against what you actually see, then give your own FINAL verdict.\n\n"
+    return ("u are the judge of the riview, riviewer ussualy made a mistake in the produce riview, evaluate the photo and compare it with the riviewer view, chose the wrong theme too harsh or generous? do not anchor to their number and check the claim that the riviewer stated\n\n"
             f"FIRST REVIEWER'S REVIEW:\n{review}\n\n" + rubric() + "\n\n" + JSON_SHAPE % ',\n "correction": "<what the first reviewer got wrong, or empty if nothing>"')
 
 
-def find_images(folder: Path, recursive: bool = False, skip_named: bool = True) -> list[Path]:
+def fiimage(folder: Path, recursive: bool = False, skip_named: bool = True) -> list[Path]:
     pattern = "**/*" if recursive else "*"
     return sorted(p for p in folder.glob(pattern) if p.is_file() and p.suffix.lower() in IMAGE_EXTS and not (skip_named and ALREADY_NAMED.match(p.stem)))
 
 
-def encode_image(path: Path, max_side: int = MAX_SIDE) -> str:
+def eimage(path: Path, max_side: int = MAX_SIDE) -> str:
     with Image.open(path) as img:
         img = ImageOps.exif_transpose(img).convert("RGB")
         img.thumbnail((max_side, max_side))
@@ -114,7 +105,7 @@ def encode_image(path: Path, max_side: int = MAX_SIDE) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-def extract_json(text: str) -> dict:
+def ejson(text: str) -> dict:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     decoder, found = json.JSONDecoder(), None
     for m in re.finditer(r"\{", text):
@@ -135,7 +126,7 @@ def parse_score(data: dict, key: str) -> int:
     return int(max(1, min(10, round(float(data[key])))))
 
 
-def parse_theme(raw) -> str:
+def themese(raw) -> str:
     raw = str(raw or "").strip().lower()
     if raw in THEMES:
         return raw
@@ -150,7 +141,7 @@ def parse_theme(raw) -> str:
     return "x"
 
 
-def parse_edit(raw, note: str) -> str:
+def prsed(raw, note: str) -> str:
     raw = str(raw or "").strip().lower()
     if raw in EDITS and raw != "%":
         return raw
@@ -167,12 +158,12 @@ def parse_edit(raw, note: str) -> str:
     return "%"
 
 
-def parse_reply(text: str) -> dict:
-    d = extract_json(text)
+def prsrep(text: str) -> dict:
+    d = ejson(text)
     note = str(d.get("edit_note", "") or "").strip()
     return {
         "post": parse_score(d, "post"), "sell": parse_score(d, "sell"), "compete": parse_score(d, "compete"),
-        "theme": parse_theme(d.get("theme")), "edit": parse_edit(d.get("edit"), note), "edit_note": note,
+        "theme": themese(d.get("theme")), "edit": prsed(d.get("edit"), note), "edit_note": note,
         "strength": str(d.get("strength", "") or "").strip(),
         "reason": str(d.get("reason", "") or "").strip(),
         "correction": str(d.get("correction", "") or "").strip(),
@@ -206,29 +197,29 @@ def agreement(first: dict, final: dict) -> str:
 
 
 def evaluate(path: Path, api_key: str, grader_model: str = DEFAULT_MODEL, judge_model: str | None = None, max_side: int = MAX_SIDE) -> dict:
-    data_url = encode_image(path, max_side)
-    first = parse_reply(chat(grader_model, api_key, build_prompt(), data_url))
+    data_url = eimage(path, max_side)
+    first = prsrep(chat(grader_model, api_key, bldprompt(), data_url))
     if not judge_model:
         return {**first, "first": None, "agreement": "-", "judge_error": ""}
     try:
-        final = parse_reply(chat(judge_model, api_key, build_judge_prompt(first), data_url))
+        final = prsrep(chat(judge_model, api_key, jdgprompt(first), data_url))
     except Exception as e:
         return {**first, "first": None, "agreement": "judge failed", "judge_error": str(e)}
     return {**final, "first": first, "agreement": agreement(first, final), "judge_error": ""}
 
 
-def best_use(grades: dict, bars: dict | None = None) -> str:
+def bestu(grades: dict, bars: dict | None = None) -> str:
     bars = bars or WORTH_BARS
     scores = {"1": grades["post"], "2": grades["sell"], "3": grades["compete"]}
     passing = [k for k in scores if scores[k] >= bars[k]]
     return max(passing, key=lambda k: scores[k]) if passing else "0"
 
 
-def base_name(use: str, grades: dict) -> str:
+def basen(use: str, grades: dict) -> str:
     return f"{use}-{grades['theme']}-{grades['edit']}"
 
 
-def plan_new_name(path: Path, base: str, taken: set) -> Path:
+def newname(path: Path, base: str, taken: set) -> Path:
     n = 1
     while True:
         cand = path.with_name(f"{base}_{n:03d}{path.suffix.lower()}")
@@ -238,7 +229,7 @@ def plan_new_name(path: Path, base: str, taken: set) -> Path:
         n += 1
 
 
-def apply_renames(rows: list[dict]) -> None:
+def arename(rows: list[dict]) -> None:
     for r in rows:
         try:
             if r["original"] != r["new"]:
@@ -248,7 +239,7 @@ def apply_renames(rows: list[dict]) -> None:
             print(f"could not rename {r['original'].name}: {e}")
 
 
-def write_log(rows: list[dict], log_file) -> None:
+def logw(rows: list[dict], log_file) -> None:
     with open(log_file, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(LOG_COLUMNS)

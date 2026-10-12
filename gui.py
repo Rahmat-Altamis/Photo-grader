@@ -6,7 +6,6 @@ from pathlib import Path
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QBrush, QColor, QIcon, QImageReader, QPixmap
 from PySide6.QtWidgets import QAbstractItemView, QApplication, QCheckBox, QComboBox, QFileDialog, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox, QProgressBar, QPushButton, QSizePolicy, QSpinBox, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
-
 import core
 
 COLS = ["Image", "Post", "Sell", "Compete", "Use", "Theme", "Edit", "Judge", "New name"]
@@ -44,7 +43,7 @@ class Worker(QThread):
                 break
             try:
                 g = core.evaluate(path, self.key, self.grader, self.judge, self.max_side)
-                g["use"] = core.best_use(g, self.bars)
+                g["use"] = core.bestu(g, self.bars)
                 self.result.emit(i, g)
             except Exception as e:
                 self.failed.emit(i, str(e))
@@ -71,11 +70,9 @@ class Window(QWidget):
         self.recursive.toggled.connect(lambda _: self.scan())
         self.include_renamed = QCheckBox("Re-rate already renamed")
         self.include_renamed.toggled.connect(lambda _: self.scan())
-
         self.key_edit = QLineEdit(os.environ.get("HACKCLUB_API_KEY", ""))
         self.key_edit.setEchoMode(QLineEdit.Password)
         self.key_edit.setPlaceholderText("Hack Club AI API key (or set HACKCLUB_API_KEY)")
-
         self.grader_box = QComboBox()
         self.grader_box.setEditable(True)
         self.grader_box.addItem(core.DEFAULT_MODEL)
@@ -102,8 +99,7 @@ class Window(QWidget):
         self.max_side.setSingleStep(128)
         self.max_side.setValue(core.MAX_SIDE)
         self.max_side.setSuffix(" px")
-        self.max_side.setToolTip("Longest side of the image sent to the AI (1920 = 1080p). Never upscaled.")
-
+        self.max_side.setToolTip("longest side of the image sent to the AI (1920 = 1080p). Never upscaled.")
         self.run_btn = QPushButton("Rate images")
         self.run_btn.clicked.connect(self.toggle_run)
         self.apply_btn = QPushButton("Apply renames")
@@ -112,10 +108,9 @@ class Window(QWidget):
         self.undo_btn = QPushButton("Undo from log...")
         self.undo_btn.clicked.connect(self.undo)
         legend_btn = QPushButton("Legend")
-        legend_btn.clicked.connect(lambda: QMessageBox.information(self, "Filename legend", core.legend_text()))
+        legend_btn.clicked.connect(lambda: QMessageBox.information(self, "Filename legend", core.lgntext()))
         self.progress = QProgressBar()
         self.status = QLabel("Pick a folder to begin.")
-
         self.table = QTableWidget(0, len(COLS))
         self.table.setHorizontalHeaderLabels(COLS)
         self.table.setIconSize(QSize(THUMB, THUMB))
@@ -128,7 +123,6 @@ class Window(QWidget):
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
         header.setStretchLastSection(True)
         self.table.itemSelectionChanged.connect(self.show_detail)
-
         self.preview = QLabel()
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setMinimumSize(300, 240)
@@ -137,7 +131,6 @@ class Window(QWidget):
         self.detail.setWordWrap(True)
         self.detail.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.detail.setTextFormat(Qt.RichText)
-
         side = QVBoxLayout()
         side.addWidget(self.preview, 3)
         side.addWidget(self.detail, 3)
@@ -213,7 +206,7 @@ class Window(QWidget):
             return
 
         self.folder = folder
-        self.images = core.find_images(folder, self.recursive.isChecked(), skip_named=not self.include_renamed.isChecked())
+        self.images = core.fiimage(folder, self.recursive.isChecked(), skip_named=not self.include_renamed.isChecked())
         self.table.setRowCount(len(self.images))
         for i, p in enumerate(self.images):
             item = QTableWidgetItem(p.name)
@@ -236,7 +229,7 @@ class Window(QWidget):
             QMessageBox.warning(self, "No images", "Choose a folder that contains images first.")
             return
         if not key:
-            QMessageBox.warning(self, "API key needed", "Paste your Hack Club AI API key (from ai.hackclub.com).")
+            QMessageBox.warning(self, "API key needed", "Paste your Hc AI API key.")
             return
 
         self.grades, self.taken = {}, set()
@@ -274,7 +267,7 @@ class Window(QWidget):
 
     def on_result(self, i, g):
         path = self.images[i]
-        new = core.plan_new_name(path, core.base_name(g["use"], g), self.taken)
+        new = core.newname(path, core.basen(g["use"], g), self.taken)
         g.update(original=path, new=new, applied="no")
         self.grades[i] = g
         self._cell(i, 1, g["post"], g["post"])
@@ -355,9 +348,9 @@ class Window(QWidget):
         if answer != QMessageBox.Yes:
             return
 
-        core.apply_renames(rows)
+        core.arename(rows)
         log = self.folder / f"ratings_{datetime.now():%Y%m%d_%H%M%S}.csv"
-        core.write_log(rows, log)
+        core.logw(rows, log)
         done = 0
         for i, g in self.grades.items():
             if g["applied"] == "yes":
