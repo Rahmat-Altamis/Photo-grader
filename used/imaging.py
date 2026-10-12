@@ -11,7 +11,6 @@ except ImportError:
     Image = None
 
 def find_images(folder: Path, recursive: bool = False) -> list[Path]:
-    """Image files in a folder, skipping ones this tool already renamed."""
     pattern = "**/*" if recursive else "*"
     files = [
         p for p in folder.glob(pattern)
