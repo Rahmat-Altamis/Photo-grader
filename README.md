@@ -24,6 +24,13 @@ im in Arch Linux currently, and im lazy to run my VM just for compiling exe/deb 
 >>>>>>> 0d0c56c (V6)
 - it would also reccomend to rename, just press yes and it will be renamed by it grade edit suggestion and types
 
+IF you are not lazy and choose to pull the repo:
+- pull this repo
+- IF in windows click in run.bat it will install it for you
+- IF in linux run 'chmod +x run.sh' then double click run.sh after that
+- when the Gui is open set the key set the passing grade and things
+- done
+
 ## Catalog
 
 heres the catalog by the names so when u start editing the photo u wont be confused:
