@@ -52,7 +52,7 @@ class Worker(QThread):
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Image Rater - Hack Club AI")
+        self.setWindowTitle("photograding")
         self.resize(1350, 760)
         self.folder = None
         self.images, self.grades, self.taken = [], {}, set()
@@ -62,7 +62,7 @@ class Window(QWidget):
 
     def _build(self):
         self.folder_edit = QLineEdit()
-        self.folder_edit.setPlaceholderText("Choose a folder with images...")
+        self.folder_edit.setPlaceholderText("image folder maybe sd card from camera good...")
         self.folder_edit.editingFinished.connect(lambda: self.scan())
         self.browse_btn = QPushButton("Browse...")
         self.browse_btn.clicked.connect(self.browse)
@@ -72,7 +72,7 @@ class Window(QWidget):
         self.include_renamed.toggled.connect(lambda _: self.scan())
         self.key_edit = QLineEdit(os.environ.get("HACKCLUB_API_KEY", ""))
         self.key_edit.setEchoMode(QLineEdit.Password)
-        self.key_edit.setPlaceholderText("Hack Club AI API key (or set HACKCLUB_API_KEY)")
+        self.key_edit.setPlaceholderText("HC KEY  key (or set HACKCLUB_API_KEY)")
         self.grader_box = QComboBox()
         self.grader_box.setEditable(True)
         self.grader_box.addItem(core.DEFAULT_MODEL)

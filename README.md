@@ -3,7 +3,11 @@
 Hello everyone good morning/afternoon/evening, so what is photo grader? well let me tell a story first, a few years ago when im still a child, i love photography, but im so lazy to pick up the best photo for each and each, well its 5 years ago and now we have AI, NICE what if ai rate the photos for its best use?? well thats why im building this
 
 ## App Demo
+<<<<<<< HEAD
 
+=======
+![preview](image.png)
+>>>>>>> 0d0c56c (V6)
 [demo video](./demo.webm)
 
 ## Installation
@@ -14,6 +18,10 @@ im in Arch Linux currently, and im lazy to run my VM just for compiling exe/deb 
 - set ur key
 - select the folder with the photo you wanna short
 - press grade it
+<<<<<<< HEAD
+=======
+- after some waiting the results will come out
+>>>>>>> 0d0c56c (V6)
 - it would also reccomend to rename, just press yes and it will be renamed by it grade edit suggestion and types
 
 ## Catalog
@@ -61,8 +69,13 @@ heres the catalog by the names so when u start editing the photo u wont be confu
 ### Edit Hints
 
 - `crop|rotate|straighten|tilt|orient|frame|compos`: `^`
+<<<<<<< HEAD
 - `exposure|bright|underexpose|overexpose|shadows|highlights`: `+`
 - `white balance|colour|saturate|tint`: `~`
+=======
+- `exposur|bright|underexpos|overexpos|shadows|highlights`: `+`
+- `white balance|colour|saturat|tint`: `~`
+>>>>>>> 0d0c56c (V6)
 - `sharpen|noise|grain|soft`: `#`
 - `retouch|distract|clone|erase|remove`: `@`
 - `reshoot|retake|unusable`: `!`
@@ -96,4 +109,8 @@ heres the catalog by the names so when u start editing the photo u wont be confu
 - endpoint OpenAI compatible (`/chat/completions`) with base64 image input
 - Model grader: `google/gemini-2.5-flash`
 - Model judge: `z-ai/glm-5.3-flash`
+<<<<<<< HEAD
 - called by `requests`, with retry + exponential backoff
+=======
+- called by `requests`, with retry + exponential backoff
+>>>>>>> 0d0c56c (V6)
